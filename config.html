@@ -84,9 +84,9 @@
           document.location = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(saveOptions()));
         });
         $('#alarm_switch').val(getQueryVariable('use_alarm')).change();
-        $('#wkday_hr').val((int)getQueryVariable('wkday')/60);
+        $('#wkday_hr').val(floor(getQueryVariable('wkday')/60));
         $('#wkday_min').val(getQueryVariable('wkday')%60);
-        $('#wkend_hr').val((int)getQueryVariable('wkend')/60);
+        $('#wkend_hr').val(floor(getQueryVariable('wkend')/60));
         $('#wkend_min').val(getQueryVariable('wkend')%60);
         //$('#snooze').val(getQueryVariable('snooze'));
         
