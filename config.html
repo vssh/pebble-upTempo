@@ -9,6 +9,7 @@
     <script src='http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.js'></script>
     <style>
       .ui-header .ui-title { margin-left: 1em; margin-right: 1em; text-overflow: clip; }
+      div.ui-input-text { width: 50px !important }
       /*.ui-radio { width: 50%; }*/
     </style>
   </head>
@@ -20,7 +21,7 @@
 
       <div data-role='content'>
 
-        <div data-role="fieldcontain" data-inline="true">
+        <div data-role="fieldcontain">
           <label for="alarm_switch">Use alarms</label>
           <select name="alarm_switch" id="alarm_switch" data-theme="c" data-role="slider" data-track-theme="d">
             <option value=0>No</option>
@@ -28,7 +29,7 @@
           </select>
         </div>
 
-        <div data-role="fieldcontain" data-inline="true">
+        <div data-role="fieldcontain">
           <label for="wkday_hr">Weekday time</label>
           <input type="number" name="wkday_hr" id="wkday_hr" value="" />:
           <input type="number" name="wkday_min" id="wkday_min" value="" />
@@ -41,7 +42,7 @@
         </div>
         
         <div data-role="fieldcontain">
-          <label for="snooze">Weekday time</label>
+          <label for="snooze">Snooze time</label>
           <input type="number" name="snooze" id="snooze" value="" />
         </div>
       </div>
