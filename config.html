@@ -68,9 +68,9 @@
       function saveOptions() {
         var options = {
           'use_alarm': $('#alarm_switch').val(),
-          'wkday': $('#wkday_hr').val()*60+$('#wkday_min').val(),
+          'wkday': parseInt($('#wkday_hr').val())*60+parseInt($('#wkday_min').val()),
           //'wkday_min': $('#wkday_min').val(),
-          'wkend': $('#wkend_hr').val()*60+$('#wkend_min').val()/*,
+          'wkend': parseInt($('#wkend_hr').val())*60+parseInt($('#wkend_min').val())/*,
           'wkend_min': $('#wkend_min').val(),
           'snooze': $('#snooze').val()*/
         }
