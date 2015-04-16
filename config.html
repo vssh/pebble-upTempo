@@ -23,8 +23,8 @@
         <div data-role="fieldcontain">
           <label for="alarm_switch">Use alarms</label>
           <select name="alarm_switch" id="alarm_switch" data-theme="c" data-role="slider" data-track-theme="d">
-            <option value="false">No</option>
-            <option value="true">Yes</option>
+            <option value=0>No</option>
+            <option value=1>Yes</option>
           </select>
         </div>
 
@@ -38,6 +38,11 @@
           <label for="wkend_hr">Weekend time</label>
           <input type="number" name="wkend_hr" id="wkend_hr" value="" />:
           <input type="number" name="wkend_min" id="wkend_min" value="" />
+        </div>
+        
+        <div data-role="fieldcontain">
+          <label for="snooze">Weekday time</label>
+          <input type="number" name="snooze" id="snooze" value="" />
         </div>
       </div>
     </div>
@@ -58,7 +63,8 @@
           'wkday_hr': $('#wkday_hr').val(),
           'wkday_min': $('#wkday_min').val(),
           'wkend_hr': $('#wkend_hr').val(),
-          'wkend_min': $('#wkend_min').val()
+          'wkend_min': $('#wkend_min').val(),
+          'snooze': $('#snooze').val()
         }
         return options;
       }
@@ -74,17 +80,20 @@
         $('#wkday_min').val(getQueryVariable('wkday_min'));
         $('#wkend_hr').val(getQueryVariable('wkend_hr'));
         $('#wkend_min').val(getQueryVariable('wkend_min'));
+        $('#snooze').val(getQueryVariable('snooze'));
         
         // Disable location field based on GPS toggle
-        $('#wkday_hr').prop('disabled', $('#alarm_switch').val() == "true");
-        $('#wkday_min').prop('disabled', $('#alarm_switch').val() == "true");
-        $('#wkend_hr').prop('disabled', $('#alarm_switch').val() == "true");
-        $('#wkend_min').prop('disabled', $('#alarm_switch').val() == "true");
+        $('#wkday_hr').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#wkday_min').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#wkend_hr').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#wkend_min').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#snooze').prop('disabled', $('#snooze').val() == 0);
         $('#gps_switch').change(function() {
-          $('#wkday_hr').prop('disabled', $('#alarm_switch').val() == "true");
-        $('#wkday_min').prop('disabled', $('#alarm_switch').val() == "true");
-        $('#wkend_hr').prop('disabled', $('#alarm_switch').val() == "true");
-        $('#wkend_min').prop('disabled', $('#alarm_switch').val() == "true");
+          $('#wkday_hr').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#wkday_min').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#wkend_hr').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#wkend_min').prop('disabled', $('#alarm_switch').val() == 0);
+        $('#snooze').prop('disabled', $('#snooze').val() == 0);
         });
       });
     </script>
