@@ -46,6 +46,22 @@
           <input type="number" name="snooze" id="snooze" value="" />
         </div>-->
         
+        <div data-role="fieldcontain">
+          <label for="bt_switch">Use bluetooth diconnection alerts(does not work yet)</label>
+          <select name="bt_switch" id="bt_switch" data-theme="c" data-role="slider" data-track-theme="d">
+            <option value=0>No</option>
+            <option value=1>Yes</option>
+          </select>
+        </div>
+        
+        <div data-role="fieldcontain">
+          <label for="idle_switch">Use idle alerts(does not work yet)</label>
+          <select name="idle_switch" id="idle_switch" data-theme="c" data-role="slider" data-track-theme="d">
+            <option value=0>No</option>
+            <option value=1>Yes</option>
+          </select>
+        </div>
+        
         <div class='ui-body ui-body-b'>
           <fieldset class='ui-grid-a'>
             <div class='ui-block-a'><button type='submit' data-theme='d' id='b-cancel'>Cancel</button></div>
@@ -70,9 +86,11 @@
           'use_alarm': $('#alarm_switch').val(),
           'wkday': parseInt($('#wkday_hr').val())*60+parseInt($('#wkday_min').val()),
           //'wkday_min': $('#wkday_min').val(),
-          'wkend': parseInt($('#wkend_hr').val())*60+parseInt($('#wkend_min').val())/*,
+          'wkend': parseInt($('#wkend_hr').val())*60+parseInt($('#wkend_min').val()),/*,
           'wkend_min': $('#wkend_min').val(),
           'snooze': $('#snooze').val()*/
+          'bt_alert': $('#bt_switch').val(),
+          'idle_alert': $('#idle_switch')
         }
         return options;
       }
@@ -89,6 +107,8 @@
         $('#wkend_hr').val(Math.floor(getQueryVariable('wkend')/60));
         $('#wkend_min').val(getQueryVariable('wkend')%60);
         //$('#snooze').val(getQueryVariable('snooze'));
+        $('#bt_switch').val(getQueryVariable('bt_alert')).change();
+        $('#idle_switch').val(getQueryVariable('idle_alert')).change();
         
         // Disable location field based on GPS toggle
         $('#wkday_hr').prop('disabled', $('#alarm_switch').val() == 0);
