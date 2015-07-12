@@ -89,8 +89,8 @@
           'wkend': parseInt($('#wkend_hr').val())*60+parseInt($('#wkend_min').val()),/*,
           'wkend_min': $('#wkend_min').val(),
           'snooze': $('#snooze').val()*/
-          'bt_alert': $('#bt_switch').val(),
-          'idle_alert': $('#idle_switch').val()
+          'use_bt': $('#bt_switch').val(),
+          'use_idle': $('#idle_switch').val()
         }
         return options;
       }
@@ -107,8 +107,8 @@
         $('#wkend_hr').val(Math.floor(getQueryVariable('wkend')/60));
         $('#wkend_min').val(getQueryVariable('wkend')%60);
         //$('#snooze').val(getQueryVariable('snooze'));
-        $('#bt_switch').val(getQueryVariable('bt_alert')).change();
-        $('#idle_switch').val(getQueryVariable('idle_alert')).change();
+        $('#bt_switch').val(getQueryVariable('use_bt')).change();
+        $('#idle_switch').val(getQueryVariable('use_idle')).change();
         
         // Disable location field based on GPS toggle
         $('#wkday_hr').prop('disabled', $('#alarm_switch').val() == 0);
