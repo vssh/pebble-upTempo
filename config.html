@@ -55,11 +55,8 @@
         </div>
         
         <div data-role="fieldcontain">
-          <label for="idle_switch">Use idle alerts(does not work yet)</label>
-          <select name="idle_switch" id="idle_switch" data-theme="c" data-role="slider" data-track-theme="d">
-            <option value=0>No</option>
-            <option value=1>Yes</option>
-          </select>
+          <label for="idle_time">Idle time alert, 0 to disable(does not work yet)</label>
+          <input type="number" name="idle_time" id="idle_time" value="" min="0" />:
         </div>
         
         <div class='ui-body ui-body-b'>
@@ -90,7 +87,7 @@
           'wkend_min': $('#wkend_min').val(),
           'snooze': $('#snooze').val()*/
           'use_bt': $('#bt_switch').val(),
-          'use_idle': $('#idle_switch').val()
+          'idle_time': parseInt($('#idle_time').val())
         }
         return options;
       }
@@ -108,7 +105,7 @@
         $('#wkend_min').val(getQueryVariable('wkend')%60);
         //$('#snooze').val(getQueryVariable('snooze'));
         $('#bt_switch').val(getQueryVariable('use_bt')).change();
-        $('#idle_switch').val(getQueryVariable('use_idle')).change();
+        $('#idle_time').val(getQueryVariable('idle_time'));
         
         // Disable location field based on GPS toggle
         $('#wkday_hr').prop('disabled', $('#alarm_switch').val() == 0);
