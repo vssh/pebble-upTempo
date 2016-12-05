@@ -32,7 +32,7 @@ static Counter mCounter = {.movement=0,
                            .phoneIntegration=false,
                            .lastHr=0};
 
-static DataLoggingSessionRef sessionsDataLog, mMovementDataLog, mStepsDataLog;
+static DataLoggingSessionRef sessionsDataLog, mSensorDataLog;
 
 static AccelData mAcceleration[SAMPLE_SIZE];
 static Session mCurrentSession = {.type=TYPE_IDLE, .startTime=0, .endTime=0, .steps=0};
@@ -182,6 +182,24 @@ void resetSession() {
       //update UI on app
       sendMsgToApp(0, WORKER_MSG_UPDATE);
     }
+    #if PBL_API_EXISTS(health_service_peek_current_value)
+    if(mCounter.phoneIntegration) {
+      HealthServiceAccessibilityMask hr = health_service_metric_accessible(HealthMetricHeartRateBPM, time(NULL), time(NULL));
+      if (hr & HealthServiceAccessibilityMaskAvailable) {
+        uint16_t val = (int16_t) health_service_peek_current_value(HealthMetricHeartRateBPM);
+        if(val > 0 && mCounter.lastHr != val) {
+          uint32_t now = time(NULL);
+          DataTime dataTime[] = {(DataTime){.data = val, .timestamp = now, .sensor = SENSOR_TYPE_HR}};
+          if(mCurrentSession.type == TYPE_IDLE && mPreviousSession.endTime > 0 &&
+             (now-mPreviousSession.endTime > 10*60 || mPreviousSession.type == TYPE_IDLE)) {
+            dataTime[0].sensor = SENSOR_TYPE_HR_RESTING;
+          }
+          data_logging_log(mSensorDataLog, &dataTime, 1);
+          mCounter.lastHr = val;
+        }
+      }
+    }
+    #endif
   }
   
   //send app activity type(for use in smart alarm)
@@ -234,6 +252,7 @@ void processAccelerometerData(AccelData* acceleration, uint32_t size) {
         feature.deviationH += h * h;
         
         // Reuse it for later step counter
+        //mAcceleration[i].x = (uint16_t)v;
         mAcceleration[i].y = (uint16_t)h;        
       }
       feature.meanV /= SAMPLE_SIZE;
@@ -293,6 +312,7 @@ void processAccelerometerData(AccelData* acceleration, uint32_t size) {
         //count steps if peaks fall in buffer zones
         for(uint8_t i=1; i<count; i++) {
           if((uint16_t)mAcceleration[i].timestamp-thisPeakTime < MAX_STEP_PERIOD &&
+             /*(uint16_t)mAcceleration[i].timestamp-thisPeakTime > MIN_STEP_PERIOD &&*/
               mAcceleration[i].x>bufferLow && mAcceleration[i].x<bufferHigh) {
             mNewSession.steps++;
             thisPeakTime = (uint16_t)mAcceleration[i].timestamp;
@@ -304,6 +324,7 @@ void processAccelerometerData(AccelData* acceleration, uint32_t size) {
         if((mNewSession.steps < MIN_STEP_NEW_SESSION && (mCounter.state != STATE_ACTIVE || mNewSession.steps < MIN_STEP_ACTIVE_SESSION)) ||
            (thisPeakTime-thisPeak)/(mNewSession.steps-1) < MIN_STEP_PERIOD) {
           mNewSession.type = TYPE_IDLE;
+          //mNewSession.steps = 0;
         }
       }
       mCounter.dataSize = 0;
@@ -313,22 +334,40 @@ void processAccelerometerData(AccelData* acceleration, uint32_t size) {
         mCounter.movementCount++;
         //send acceleration values to app
         if(mCounter.movementCount > 7) {
-          DataTime dataTime[] = {(DataTime){.data = mCounter.movement/8, .timestamp = mNewSession.endTime}};
-          data_logging_log(mMovementDataLog, &dataTime, 1);
+          DataTime dataTime[] = {(DataTime){.data = mCounter.movement/8, .timestamp = mNewSession.endTime, .sensor = SENSOR_TYPE_MOVEMENT}};
+          data_logging_log(mSensorDataLog, &dataTime, 1);
           mCounter.movement = 0;
           mCounter.movementCount = 0;
         }
         
         //send steps to app
         if(mNewSession.steps > 0) {
-          DataTime dataTime[] = {(DataTime){.data = mNewSession.steps, .timestamp = mNewSession.endTime}};
-          data_logging_log(mStepsDataLog, &dataTime, 1);
+          DataTime dataTime[] = {(DataTime){.data = mNewSession.steps, .timestamp = mNewSession.endTime, .sensor = SENSOR_TYPE_STEPS}};
+          data_logging_log(mSensorDataLog, &dataTime, 1);
         }
       }
       
       resetSession();
     }
 }
+
+/*#if PBL_API_EXISTS(health_service_peek_current_value)
+static void health_handler(HealthEventType event, void *context) {
+  if(event == HealthEventHeartRateUpdate) {
+    uint16_t val = (uint16_t) health_service_peek_current_value(HealthMetricHeartRateBPM);
+    //data_logging_log(mSensorDataLog, &dataTime, 1);
+    if(val > 0 && mCounter.lastHr != val) {
+      uint32_t now = time(NULL);
+      DataTime dataTime[] = {(DataTime){.data = val, .timestamp = now, .sensor = SENSOR_TYPE_HR}};
+      if(mCurrentSession.type == TYPE_IDLE && (mPreviousSession.endTime-now > 10*60)) {
+        dataTime[0].sensor = SENSOR_TYPE_HR_RESTING;
+      }
+      data_logging_log(mSensorDataLog, &dataTime, 1);
+      mCounter.lastHr = val;
+    }
+  }
+}
+#endif*/
 
 
 static void init(void) {
@@ -351,8 +390,15 @@ static void init(void) {
     sizeof(Session),                // length
     true                            // resume
   );
+  
+  mSensorDataLog = data_logging_create(
+    1112,                            // tag
+    DATA_LOGGING_BYTE_ARRAY,        // DataLoggingItemType
+    sizeof(DataTime),                // length
+    true                            // resume
+  );
 
-  mMovementDataLog = data_logging_create(
+  /*mMovementDataLog = data_logging_create(
     1112,                            // tag
     DATA_LOGGING_BYTE_ARRAY,        // DataLoggingItemType
     sizeof(DataTime),                // length
@@ -364,15 +410,22 @@ static void init(void) {
     DATA_LOGGING_BYTE_ARRAY,        // DataLoggingItemType
     sizeof(DataTime),                // length
     true                            // resume
-  );
+  );*/
+   
+  /*#if PBL_API_EXISTS(health_service_peek_current_value)
+  health_service_events_subscribe(health_handler, NULL);
+  #endif*/
 }
 
 static void deinit(void) {
-  accel_data_service_unsubscribe();
+  /*accel_data_service_unsubscribe();
   tick_timer_service_unsubscribe();
+  #if PBL_API_EXISTS(health_service_peek_current_value)
+  health_service_events_unsubscribe();
+  #endif
   data_logging_finish(sessionsDataLog);
-  data_logging_finish(mMovementDataLog);
-  data_logging_finish(mStepsDataLog);
+  data_logging_finish(mSensorDataLog);*/
+  //data_logging_finish(mStepsDataLog);
 }
 
 int main(void) {

@@ -19,6 +19,9 @@
 #include <pebble.h>
 #include "utils.h"
 
+GFont forcedSquare;
+bool phoneDataSharing;
+
 /**
  * create a text layer with all values
 **/

@@ -11,7 +11,7 @@
 #define WKEND        172
 
 extern Window *alarm_window;
-extern bool use_alarm;
+//extern bool use_alarm;
 extern int16_t wkday;
 extern int16_t wkend;
 void alarm_time_handler(char *time_string, int time_hr, int time_min);

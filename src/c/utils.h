@@ -2,7 +2,7 @@
 #include <pebble.h>
 #include "persist.h"
   
-#define APP_VERSION     "UpTempo v0.20"
+#define APP_VERSION     "upTempo v0.25"
   
 #ifdef PBL_COLOR
   #define COLOR_BACKGROUND GColorBlack
@@ -21,8 +21,14 @@
   #define WORKER_MSG_TYPE     117
   #define WORKER_MSG_PAUSE     118
   #define WORKER_MSG_STATUS    119
+  //#define WORKER_MSG_BLUETOOTH  120
   #define WORKER_MSG_IDLE_ALERT 121
   #define WORKER_MSG_RESET      122
+  #define WORKER_MSG_SLEEP_DETAIL 123
+  //#define WORKER_MSG_IS_PAUSED  123
+  //#define WORKER_MSG_UNPAUSE    124
+  //#define WORKER_MSG_RESET_OTHERS 125
+  //#define WORKER_MSG_RESET_SLEEP 126
 
   #define TYPE_UNKNOWN 70
 
@@ -41,6 +47,10 @@
   #define TYPE_WATER      54
   #define TYPE_WINTER      55
 
+  //#define SNOOZE       173
+  //#define USE_BT     174
+  //#define IDLE_TIME   175
+
 
   #define APPMSG_CHANGE_COMM_ACTIVATE 211
   #define APPMSG_DURATION      212
@@ -55,6 +65,7 @@
   #define APPMSG_SEND_COMM_ACTIVATE_STATE 221
   #define APPMSG_RECEIVE_COMM_ACTIVATE_STATE 222
   #define APPMSG_CANCEL        223
+  #define APPMSG_PACE          224
 
   #define APPMSG_DAY_VAL       230
   #define APPMSG_HISTORY_VAL   231
@@ -77,6 +88,8 @@
 
   #define APPMSG_NEXT_ALARM         341
 
+extern GFont forcedSquare;
+extern bool phoneDataSharing;
 
 typedef struct {
   uint32_t startTime;

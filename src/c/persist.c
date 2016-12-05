@@ -53,8 +53,8 @@ bool init_storage() {
 
   if(!persist_exists(PERSIST_IDLE_TIME)) error = error || persist_write_int(PERSIST_IDLE_TIME, 90) == S_SUCCESS;
   if(!persist_exists(PERSIST_RESET_TIMESTAMP)) error = error || persist_write_int(PERSIST_RESET_TIMESTAMP, time(NULL)) == S_SUCCESS;
-  if(!persist_exists(PERSIST_DATALOGGING_ACTIVATION)) error = error || persist_write_bool(PERSIST_DATALOGGING_ACTIVATION, false) == S_SUCCESS;
-  if(!persist_exists(PERSIST_DISPLAY_DATA_PHONE)) error = error || persist_write_bool(PERSIST_DISPLAY_DATA_PHONE, false) == S_SUCCESS;
+  if(!persist_exists(PERSIST_PHONE_DATA_SHARING)) error = error || persist_write_bool(PERSIST_PHONE_DATA_SHARING, false) == S_SUCCESS;
+  //if(!persist_exists(PERSIST_DISPLAY_DATA_PHONE)) error = error || persist_write_bool(PERSIST_DISPLAY_DATA_PHONE, false) == S_SUCCESS;
   if(!persist_exists(PERSIST_COMM_ACTIVATION)) error = error || persist_write_bool(PERSIST_COMM_ACTIVATION, false) == S_SUCCESS;
   if(!persist_exists(PERSIST_ACTIVE_TRACK)) error = error || persist_write_bool(PERSIST_ACTIVE_TRACK, false) == S_SUCCESS;
   if(!persist_exists(PERSIST_ACTIVE_TRACK_PAUSE)) error = error || persist_write_bool(PERSIST_ACTIVE_TRACK_PAUSE, false) == S_SUCCESS;
@@ -87,7 +87,10 @@ void handle_migration(int version) {
       persist_delete(PERSIST_YEST_WALK);
       persist_delete(PERSIST_YEST_JOG);
       persist_delete(PERSIST_YEST_SLEEP);
-      break;    
+      break;
+    case 4:
+      persist_delete(PERSIST_DISPLAY_DATA_PHONE);
+      break;
     default:
       break;
   }

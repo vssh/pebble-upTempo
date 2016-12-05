@@ -19,13 +19,13 @@
 #include <pebble.h>
 #include "main.h"
 
-uint idle_time = 120;
+//uint idle_time = 120;
 char main_time_text[6] = "";
 
 int worker_start_msg = -1;
 
-const int inbound_size = 96;
-const int outbound_size = 16;
+//const int inbound_size = 96;
+//const int outbound_size = 16;
 
 int* rec_page;
 
@@ -34,6 +34,7 @@ int* rec_page;
 **/
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *t = dict_read_first(iterator);
+  //APP_LOG(APP_LOG_LEVEL_INFO, "Message received: %u", (uint)t->key);
 
   bool comm_activation;
   // Process all pairs present
@@ -47,11 +48,13 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         break;
       case APPMSG_CHANGE_COMM_ACTIVATE:
         //chage comm activation state
+        //APP_LOG(APP_LOG_LEVEL_DEBUG, "USE ALARM: %u", (uint)t->value->uint32);
         comm_activation = t->value->uint8 != 0;
         persist_write_bool(PERSIST_COMM_ACTIVATION, comm_activation);
-        persist_write_bool(PERSIST_DATALOGGING_ACTIVATION, comm_activation);
-        persist_write_bool(PERSIST_DISPLAY_DATA_PHONE, comm_activation);
+        persist_write_bool(PERSIST_PHONE_DATA_SHARING, comm_activation);
+        //persist_write_bool(PERSIST_DISPLAY_DATA_PHONE, comm_activation);
         persist_write_int(PERSIST_WORKER_WAKEUP_MESSAGE, WORKER_MSG_READ_SETTINGS);
+        phoneDataSharing = comm_activation;
         break;
       case APPMSG_DISTANCE:
         if(persist_read_bool(PERSIST_ACTIVE_TRACK))
@@ -62,6 +65,10 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       case APPMSG_SPEED:
         if(persist_read_bool(PERSIST_ACTIVE_TRACK))
           active_set_speed(t->value->cstring);
+        break;
+      case APPMSG_PACE:
+        if(persist_read_bool(PERSIST_ACTIVE_TRACK))
+          active_set_pace(t->value->cstring);
         break;
       case APPMSG_HEART:
         if(persist_read_bool(PERSIST_ACTIVE_TRACK))
@@ -106,6 +113,10 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         if(persist_read_bool(PERSIST_ACTIVE_TRACK))
           active_set_stop(false);
         break;
+      /*case APPMSG_UNIT:
+        if(persist_read_bool(PERSIST_ACTIVE_TRACK))
+          active_set_unit(t->value->int8 != 0);
+        break;*/
     }
     // Get next pair, if any
     t = dict_read_next(iterator);
@@ -119,6 +130,10 @@ static void inbox_dropped_callback(AppMessageResult reason, void *context) {
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed! Reason: %d", reason);
 }
+
+/*static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+  //APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
+}*/
 
 uint32_t get_avg(int key0) {
   uint32_t val = 0;
@@ -170,7 +185,7 @@ void reset_sync() {
       persist_write_int(PERSIST_RESET_TIMESTAMP, now);
     }
   }
-  if(!persist_read_bool(PERSIST_DISPLAY_DATA_PHONE)) {
+  if(!phoneDataSharing) {
     set_ui_vals(-1, false);
   }
   persist_write_int(PERSIST_WORKER_WAKEUP_MESSAGE, WORKER_MSG_READ_SETTINGS);
@@ -188,7 +203,7 @@ static void worker_message_handler(uint16_t type, AppWorkerMessage *data) {
       break;
     case WORKER_MSG_UPDATE:
       //update UI values if displayed values not from phone
-      if(!persist_read_bool(PERSIST_DISPLAY_DATA_PHONE)) {
+      if(!phoneDataSharing) {
         set_ui_vals(-1, false);
       }
       break;
@@ -238,8 +253,9 @@ void handle_init(void) {
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
+  //app_message_register_outbox_sent(outbox_sent_callback);
   // Setup messaging
-  app_message_open(inbound_size, outbound_size);
+  app_message_open(96, 16);
   
   tick_timer_service_subscribe(MINUTE_UNIT, main_tick_handler);  
   wakeup_service_subscribe(alarm_init);
@@ -247,6 +263,9 @@ void handle_init(void) {
   rec_page = malloc(sizeof(int));
 
   manage_persist();
+  
+  phoneDataSharing = persist_read_bool(PERSIST_PHONE_DATA_SHARING);
+  forcedSquare = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_FORCED_SQUARE_35));
   switch(launch_reason()) {
     case APP_LAUNCH_WORKER:
       worker_start_msg = persist_read_int(PERSIST_WORKER_WAKEUP_MESSAGE);
@@ -270,6 +289,7 @@ void handle_init(void) {
       // Get details and handle the wakeup
       alarm_init();
       break;
+    
     default:
       //directly show active window
       if(persist_read_bool(PERSIST_ACTIVE_TRACK)) {
@@ -289,6 +309,7 @@ void handle_init(void) {
 void handle_deinit(void) {
   free(rec_page);
   manage_alarms();
+  fonts_unload_custom_font(forcedSquare);
   tick_timer_service_unsubscribe();
   app_worker_message_unsubscribe();
   app_message_deregister_callbacks();

@@ -11,6 +11,7 @@ void active_init();
 
 void active_set_distance(char *value);
 void active_set_speed(char *value);
+void active_set_pace(char *value);
 void active_set_time(char *value);
 void active_set_heart(char *value);
 void active_set_stop(bool save);

@@ -15,7 +15,9 @@ uint8_t classify(Feature feature) {
   
   double class1 = 2.7 +
     feature.meanV * 0.05 +
-    feature.meanH * -0.05;
+    feature.meanH * -0.05 /*+
+    feature.deviationV * 0 +
+    feature.deviationH * 0*/;
   
   if (class1 > probability) {
     probability = class1;
@@ -23,15 +25,23 @@ uint8_t classify(Feature feature) {
   }
   
   double class2 = -4.15 +
+  //double class2 = -2.75 +
+    //feature.meanV * -0.17 +
     feature.meanV * -0.16 +
-    feature.meanH * 0.1;
+    feature.meanH * 0.1 /*+
+    feature.meanH * 0.07 +
+    feature.deviationV * 0 +
+    feature.deviationH * 0*/;
   
   if (class2 > probability) {
     probability = class2;
     type = TYPE_WALK;
   }
   double class3 = -65.76 +
-    feature.meanH * 0.31;
+    feature.meanH * 0.31
+    /*feature.meanH * 0.31 +
+    feature.deviationV * 0 +
+    feature.deviationH * 0*/;
   if (class3 > probability) {
     probability = class3;
     type = TYPE_JOG;

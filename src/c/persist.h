@@ -2,14 +2,18 @@
 
 #include "utils.h"
   
-#define CURRENT_STORAGE_VERSION 4
+#define CURRENT_STORAGE_VERSION 5
 
 #define PERSIST_SLEEP       231
+//#define PERSIST_IDLE        232
 #define PERSIST_WALK        233
 #define PERSIST_JOG         234
+//#define PERSIST_TIMESTAMP   235
 #define PERSIST_STEPS       236
+//#define PERSIST_USE_ALARM   237
 #define PERSIST_WKD         238
 #define PERSIST_WKE         240
+//#define PERSIST_SINGLE_TIME 241
 
 
 #define PERSIST_AVG_SLEEP        131
@@ -27,9 +31,10 @@
 #define PERSIST_RUN_DAY0        80
 #define PERSIST_SLEEP_DAY0        90
 
+//#define PERSIST_USE_BLUETOOTH_ALERT  141
 #define PERSIST_IDLE_TIME            142
 #define PERSIST_RESET_TIMESTAMP      143
-#define PERSIST_DATALOGGING_ACTIVATION    144
+#define PERSIST_PHONE_DATA_SHARING   144
 #define PERSIST_PAUSE_TIME           145
 #define PERSIST_COMM_ACTIVATION      146
 #define PERSIST_ACTIVE_TRACK         147
@@ -62,6 +67,7 @@
 #define PERSIST_ALARM_TIME4 274
 #define PERSIST_ALARM_TIME5 275
 #define PERSIST_ALARM_TIME6 276
+//#define PERSIST_SNOOZE_ALARM_TIME 277
 #define PERSIST_SINGLE_ALARM_TIME 278
   
   void manage_persist();

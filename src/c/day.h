@@ -5,7 +5,7 @@
 #include "main.h"
 
 #define NUM_UI_PAGES      4
-#define NUM_UI_MAX        13
+#define NUM_UI_MAX        14
 
 #define UI_OTHER          10
 #define UI_WINTER         9
@@ -14,8 +14,9 @@
 #define UI_TRAIN          6
 #define UI_SPORT          5
 #define UI_CYCLE          4
-#define UI_ENERGY         11
-#define UI_FLOORS         12
+#define UI_HR             11
+#define UI_ENERGY         12
+#define UI_FLOORS         13
 #define UI_STEPS          0
 #define UI_WALK           2
 #define UI_RUN            3

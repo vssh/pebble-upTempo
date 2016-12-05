@@ -20,15 +20,28 @@
 #include "day.h"
  
 Window *day_window;
-TextLayer *day_avg_text, *day_avg_val_text, *day_val_text;
+int8_t curr_page;
+uint day_val, day_avg_val;
+
+typedef struct {
+  TextLayer *day_avg_text, *day_avg_val_text, *day_val_text;
+  BitmapLayer *day_bmp_layer;
+  GBitmap *img_day;
+  char buf_val[10];
+  char buf_avg[10];
+  AppTimer* startTimer;
+  int8_t timerCount;
+}DayVars;
+
+DayVars *day_vars;
+
+/*TextLayer *day_avg_text, *day_avg_val_text, *day_val_text;
 BitmapLayer *day_bmp_layer;
 GBitmap *img_day = NULL;
-int8_t curr_page;
 char buf_val[10] = "";
 char buf_avg[10] = "";
-uint day_val, day_avg_val;
 AppTimer* startTimer;
-int8_t timerCount = 0;
+int8_t timerCount = 0;*/
 
 /**
  * Make time string
@@ -50,123 +63,150 @@ void make_day_ui(int8_t page) {
   #ifdef PBL_COLOR
   GColor color;
   #endif
-  gbitmap_destroy(img_day);
+  gbitmap_destroy(day_vars->img_day);
   
   if(page == UI_IDLE) {
-    text_layer_set_text(day_avg_text, "You're idle too long");
-    text_layer_set_text(day_val_text, main_time_text);
-    text_layer_set_text(day_avg_val_text, "");
+    text_layer_set_text(day_vars->day_avg_text, "You idle too long");
+    text_layer_set_text(day_vars->day_val_text, main_time_text);
+    text_layer_set_text(day_vars->day_avg_val_text, "");
   }
   else {
-    text_layer_set_text(day_avg_text, "Average");
+    if(page == UI_HR) {
+      text_layer_set_text(day_vars->day_avg_text, "Resting HR");
+    }
+    else if(page == UI_SLEEP) {
+      text_layer_set_text(day_vars->day_avg_text, "Deep sleep");
+    }
+    else {
+      text_layer_set_text(day_vars->day_avg_text, "Average");
+    }
     
     if(page == UI_STEPS) {
       if(day_val > 9999) {
-          snprintf(buf_val, 10, "%u %.3u", day_val/1000, day_val%1000);
+          snprintf(day_vars->buf_val, 10, "%u %.3u", day_val/1000, day_val%1000);
         }
         else {
-          snprintf(buf_val, 10, "%u", day_val);
+          snprintf(day_vars->buf_val, 10, "%u", day_val);
         }
-      snprintf(buf_avg, 10, "%u", day_avg_val);
+      snprintf(day_vars->buf_avg, 10, "%u", day_avg_val);
     }
     else if(page == UI_FLOORS) {
-      snprintf(buf_val, 10, "%u", day_val);
-      snprintf(buf_avg, 10, "%u", day_avg_val);
+      snprintf(day_vars->buf_val, 10, "%u", day_val);
+      snprintf(day_vars->buf_avg, 10, "%u", day_avg_val);
+    }
+    else if(page == UI_HR) {
+      #if PBL_API_EXISTS(health_service_peek_current_value)
+      HealthServiceAccessibilityMask hr = health_service_metric_accessible(HealthMetricHeartRateBPM, time(NULL), time(NULL));
+      if (hr & HealthServiceAccessibilityMaskAvailable) {
+        uint16_t val = (int16_t) health_service_peek_current_value(HealthMetricHeartRateBPM);
+        if(val > 0) {
+          day_val = val;
+        }
+      }
+      #endif
+      snprintf(day_vars->buf_val, 10, "%u bpm", day_val);
+      snprintf(day_vars->buf_avg, 10, "%u bpm", day_avg_val);
     }
     else if(page == UI_ENERGY) {
-      snprintf(buf_val, 10, "%u kCal", day_val);
-      snprintf(buf_avg, 10, "%u kCal", day_avg_val);
+      snprintf(day_vars->buf_val, 10, "%u kcal", day_val);
+      snprintf(day_vars->buf_avg, 10, "%u kcal", day_avg_val);
     }
     else {
-      set_time_val(day_val, buf_val);
-      set_time_val(day_avg_val, buf_avg);
+      set_time_val(day_val, day_vars->buf_val);
+      set_time_val(day_avg_val, day_vars->buf_avg);
     }
     
-    text_layer_set_text(day_val_text, buf_val);        
-    text_layer_set_text(day_avg_val_text, buf_avg);
+    text_layer_set_text(day_vars->day_val_text, day_vars->buf_val);        
+    text_layer_set_text(day_vars->day_avg_val_text, day_vars->buf_avg);
   }
   
   switch(page) {
     case UI_STEPS:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_FOOT);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_FOOT);
         #ifdef PBL_COLOR
         color = GColorCobaltBlue;
         #endif
         break;
     case UI_WALK:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_WALK);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_WALK);
         #ifdef PBL_COLOR
         color = GColorDarkCandyAppleRed;
         #endif
         break;
     case UI_RUN:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_RUN);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_RUN);
         #ifdef PBL_COLOR
         color = GColorDarkGreen;
         #endif
         break;
     case UI_SLEEP:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_SLEEP);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_SLEEP);
         #ifdef PBL_COLOR
         color = GColorArmyGreen;
         #endif
         break;
     case UI_ENERGY:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_ENERGY);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_ENERGY);
         #ifdef PBL_COLOR
         color = GColorWindsorTan;
         #endif
         break;
     case UI_FLOORS:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_FLOORS);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_FLOORS);
         #ifdef PBL_COLOR
         color = GColorIndigo;
         #endif
         break;
+    case UI_HR:
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_HEART_RATE);
+        #ifdef PBL_COLOR
+        color = GColorBulgarianRose;
+        #endif
+        break;
     case UI_CYCLE:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_BIKE);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_BIKE);
         #ifdef PBL_COLOR
         color = GColorBlue;
         #endif
         break;
     case UI_SPORT:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_SPORT);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_SPORT);
         #ifdef PBL_COLOR
         color = GColorMidnightGreen;
         #endif
         break;
     case UI_TRAIN:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_TRAIN);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_TRAIN);
         #ifdef PBL_COLOR
         color = GColorBulgarianRose;
         #endif
         break;
     case UI_WATER:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_WATER);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_WATER);
         #ifdef PBL_COLOR
         color = GColorBlueMoon;
         #endif
         break;
     case UI_WINTER:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_WINTER);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_WINTER);
         #ifdef PBL_COLOR
         color = GColorIndigo;
         #endif
         break;
     case UI_MARTIAL:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_MARTIAL);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_MARTIAL);
         #ifdef PBL_COLOR
         color = GColorOrange;
         #endif
         break;
     case UI_OTHER:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_OTHER);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_OTHER);
         #ifdef PBL_COLOR
         color = GColorImperialPurple;
         #endif
         break;
     case UI_IDLE:
-        img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_TREK);
+        day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_IDLE);
         #ifdef PBL_COLOR
         color = GColorOxfordBlue;
         #endif
@@ -174,7 +214,7 @@ void make_day_ui(int8_t page) {
         break;
   }
   
-  bitmap_layer_set_bitmap(day_bmp_layer, img_day);
+  bitmap_layer_set_bitmap(day_vars->day_bmp_layer, day_vars->img_day);
   #ifdef PBL_COLOR
   window_set_background_color(day_window, color);
   #endif
@@ -184,9 +224,9 @@ void make_day_ui(int8_t page) {
  * Use values from phone
 **/
 void set_phone_ui_vals(int *page) {
-  if(startTimer != NULL) {
-    app_timer_cancel(startTimer);
-    startTimer = NULL;
+  if(day_vars->startTimer != NULL) {
+    app_timer_cancel(day_vars->startTimer);
+    day_vars->startTimer = NULL;
   }
   if(*page >= 0) {
     curr_page = *page;
@@ -246,7 +286,7 @@ void set_ui_vals(int8_t page, bool force) {
 **/
 static void day_up_click_handler(ClickRecognizerRef recognizer, void *context) {
   if(curr_page < NUM_UI_MAX){
-    if(persist_read_bool(PERSIST_DISPLAY_DATA_PHONE)) {
+    if(phoneDataSharing) {
       appmsg_send_val(APPMSG_DAY_VAL, PHONE_SEND_BUTTON_UP);
     }
     else {
@@ -284,7 +324,7 @@ static void day_select_long_click_handler(ClickRecognizerRef recognizer, void *c
 **/
 static void day_down_click_handler(ClickRecognizerRef recognizer, void *context) {
   if(curr_page < NUM_UI_MAX){
-    if(persist_read_bool(PERSIST_DISPLAY_DATA_PHONE)) {
+    if(phoneDataSharing) {
       appmsg_send_val(APPMSG_DAY_VAL, PHONE_SEND_BUTTON_DOWN);
     }
     else {
@@ -306,7 +346,7 @@ static void day_back_click_handler(ClickRecognizerRef recognizer, void *context)
 **/
 void day_time_handler(char *time_string) {
   if(day_window!=NULL && window_is_loaded(day_window) && curr_page > NUM_UI_MAX) {
-    text_layer_set_text(day_val_text, time_string);
+    text_layer_set_text(day_vars->day_val_text, time_string);
   }
 }
 
@@ -322,30 +362,47 @@ static void day_window_load(Window *window) {
   Layer* day_window_layer = window_get_root_layer(window);
   window_set_background_color(window, COLOR_BACKGROUND);
   
-  #if defined(PBL_ROUND)
-  day_bmp_layer = macro_bitmap_layer_create(NULL, GRect(15, 40, 50, 50), day_window_layer, true);
-  day_val_text = macro_text_layer_create(GRect(65, 30, 95, 70), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK), GTextAlignmentCenter);
-  day_avg_text = macro_text_layer_create(GRect(20, 110, 140, 25), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_18), GTextAlignmentCenter);
-  day_avg_val_text = macro_text_layer_create(GRect(0, 130, 180, 30), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD), GTextAlignmentCenter);
+  #if defined(PBL_ROUND)  
+  day_vars->day_bmp_layer = macro_bitmap_layer_create(NULL, GRect(15, 40, 50, 50), day_window_layer, true);
+  day_vars->day_val_text = macro_text_layer_create(GRect(65, 25, 95, 80), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, forcedSquare, GTextAlignmentCenter);
+  day_vars->day_avg_text = macro_text_layer_create(GRect(20, 110, 140, 40), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_18), GTextAlignmentCenter);
+  day_vars->day_avg_val_text = macro_text_layer_create(GRect(0, 130, 180, 30), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD), GTextAlignmentCenter);
   
-  text_layer_enable_screen_text_flow_and_paging(day_val_text, 2);
-  #else
-  day_bmp_layer = macro_bitmap_layer_create(NULL, GRect(0, 35, 50, 50), day_window_layer, true);
-  day_val_text = macro_text_layer_create(GRect(50, 20, 95, 70), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK), GTextAlignmentRight);
+  text_layer_enable_screen_text_flow_and_paging(day_vars->day_val_text, 2);
+  text_layer_enable_screen_text_flow_and_paging(day_vars->day_avg_text, 2);
+  
+  /*#elif defined(PBL_PLATFORM_APLITE)
+  day_bmp_layer = macro_bitmap_layer_create(NULL, GRect(0, 30, 50, 50), day_window_layer, true);
+  day_val_text = macro_text_layer_create(GRect(50, 20, 94, 70), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK), GTextAlignmentRight);
   day_avg_text = macro_text_layer_create(GRect(10, 100, 124, 25), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_18), GTextAlignmentLeft);
-  day_avg_val_text = macro_text_layer_create(GRect(15, 125, 124, 30), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD), GTextAlignmentRight);
+  day_avg_val_text = macro_text_layer_create(GRect(10, 125, 124, 30), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD), GTextAlignmentRight);
+  */
+  #else
+  GSize size = layer_get_bounds(day_window_layer).size;
+  int mainWidth = 144;
+  int margin = (size.w-mainWidth)/3;
+  int height3rd = size.h/3;
+  
+  day_vars->day_bmp_layer = macro_bitmap_layer_create(NULL, GRect(margin, (2*height3rd-50)/2, 50, 50), day_window_layer, true);
+  day_vars->day_val_text = macro_text_layer_create(GRect(50+2*margin, (2*height3rd-75)/2, 94, 80), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, forcedSquare, GTextAlignmentRight);
+  day_vars->day_avg_text = macro_text_layer_create(GRect(10, 2*height3rd, size.w-20, 40), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_18), GTextAlignmentLeft);
+  day_vars->day_avg_val_text = macro_text_layer_create(GRect(10, 9*size.h/12, size.w-20, 30), day_window_layer, COLOR_TEXT, COLOR_TEXT_BACKGROUND, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD), GTextAlignmentRight);
   #endif
-  text_layer_set_overflow_mode(day_val_text, GTextOverflowModeWordWrap);
+  
+  text_layer_set_overflow_mode(day_vars->day_val_text, GTextOverflowModeWordWrap);
+  text_layer_set_overflow_mode(day_vars->day_avg_text, GTextOverflowModeWordWrap);
 }
 
 static void day_window_unload(Window *window) {
-  text_layer_destroy(day_val_text);
-  text_layer_destroy(day_avg_text);
-  text_layer_destroy(day_avg_val_text);
-  bitmap_layer_destroy(day_bmp_layer);
-  if(img_day != NULL) { gbitmap_destroy(img_day); img_day = NULL; }
+  //text_layer_destroy(day_title_text);
+  text_layer_destroy(day_vars->day_val_text);
+  text_layer_destroy(day_vars->day_avg_text);
+  text_layer_destroy(day_vars->day_avg_val_text);
+  bitmap_layer_destroy(day_vars->day_bmp_layer);
+  if(day_vars->img_day != NULL) { gbitmap_destroy(day_vars->img_day); day_vars->img_day = NULL; }
   window_destroy(day_window);
   day_window = NULL;
+  free(day_vars);
 }
 
 /**
@@ -354,26 +411,33 @@ static void day_window_unload(Window *window) {
 static void request_phone_vals(void* data) {
   if(connection_service_peek_pebble_app_connection()) {
     appmsg_send_val(APPMSG_DAY_VAL, PHONE_SEND_NO_BUTTON);
-    if(timerCount < 5) {
-      startTimer = app_timer_register(300, request_phone_vals, NULL);
-      timerCount++;
+    if(day_vars->timerCount < 5) {
+      day_vars->startTimer = app_timer_register(300, request_phone_vals, NULL);
+      day_vars->timerCount++;
     }
     else {
-      gbitmap_destroy(img_day);
-      img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_ERROR);
-      bitmap_layer_set_bitmap(day_bmp_layer, img_day);
-      text_layer_set_text(day_avg_text, "Phone unreachable");
+      gbitmap_destroy(day_vars->img_day);
+      day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_ERROR);
+      bitmap_layer_set_bitmap(day_vars->day_bmp_layer, day_vars->img_day);
+      text_layer_set_text(day_vars->day_avg_text, "Phone unreachable. Show local data...");
+      phoneDataSharing = false;
     }
   }
   else {
-    gbitmap_destroy(img_day);
-    img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_ERROR);
-    bitmap_layer_set_bitmap(day_bmp_layer, img_day);
-    text_layer_set_text(day_avg_text, "Phone disconnected");
+    gbitmap_destroy(day_vars->img_day);
+    day_vars->img_day = gbitmap_create_with_resource(RESOURCE_ID_IMG_ERROR);
+    bitmap_layer_set_bitmap(day_vars->day_bmp_layer, day_vars->img_day);
+    text_layer_set_text(day_vars->day_avg_text, "Phone disconnected. Show local data..");
+    phoneDataSharing = false;
   }
 }
 
 void day_init(bool standard) {
+  day_vars = malloc(sizeof(DayVars));
+  day_vars->img_day = NULL;
+  snprintf(day_vars->buf_val, 10, " ");
+  snprintf(day_vars->buf_avg, 10, " ");
+  
   if(day_window == NULL) {
     day_window = window_create();
     window_set_window_handlers(day_window, (WindowHandlers) {
@@ -386,14 +450,15 @@ void day_init(bool standard) {
     window_stack_push(day_window, true);
   }
   if(standard) {
-    if(persist_read_bool(PERSIST_DISPLAY_DATA_PHONE)) {
-      text_layer_set_text(day_avg_text, "Access phone data...");
+    if(phoneDataSharing) {
+      text_layer_set_text(day_vars->day_avg_text, "Access phone...");
       #ifdef PBL_COLOR
       window_set_background_color(day_window, GColorBlueMoon);
       #endif
       
       appmsg_send_val(APPMSG_DAY_VAL, PHONE_SEND_NO_BUTTON);
-      startTimer = app_timer_register(300, request_phone_vals, NULL);
+      day_vars->timerCount = 0;
+      day_vars->startTimer = app_timer_register(300, request_phone_vals, NULL);
     }
     else {
       if(curr_page == -1) {

@@ -10,7 +10,7 @@
   
 #define NUM_PAGES    3
   
-extern uint idle_time;
+//extern uint idle_time;
 extern char main_time_text[6];
 extern int worker_start_msg;
 
